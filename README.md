@@ -3,6 +3,12 @@ The City of Chicago offers [Food Inspection Data](https://data.cityofchicago.org
 
 Note the data is from June 13, 2026.
 
+## Key Takeaways
+* Violation patterns are largely consistent across Chicago ZIP codes.
+* Facility type is a stronger predictor for violation patterns than geographic location.
+* Mobile food facilities have very different violation profiles than standard restaurants.
+* Businesses can focus on a small number of violations to improve inspection outcomes: maintaining proper handwashing stations, clean food-contact surfaces, keep pest control logs, maintain overall cleanliness, and follow proper food handling, cooling and thawing procedures.
+
 ## Dataset Information
 * ~300,000 inspection records
 * ~1,000,000 violation records after normalization
@@ -28,7 +34,7 @@ The analysis was performed using:
 * Compared violation distributions across ZIP codes and facility types
 * Developed an interactive Tableau dashboard with cross-filtering and geographic analysis
 
-### Database Schema
+## Database Schema
 
 Inspections
 ------------
@@ -49,7 +55,28 @@ inspection_id (FK)
 violation_code
 violation_description
 
-The original dataset contained a license ID that appeared to represent facilities. However, because the identifier was not consistently unique and included placeholder values (such as 0), a separate facilities table couldn't be made without introducing data integrity issues.
+The original dataset contained a license ID that appeared to represent facilities. However, because the identifier was not consistently unique and included placeholder values (such as 0), a separate facilities table couldn't be made without introducing data integrity issues. 
+
+### SQL Queries
+This view served as the analysis-ready dataset to be used for Python analysis as well as Tableau dashboarding. It joined the normalized violation and inspection tables together while standardizing text values and handling missing values.
+
+```sql
+CREATE VIEW violation_analysis AS
+SELECT 
+    v.inspection_id,
+    v.violation_code,
+    v.violation_text,
+    i.inspection_date,
+    i.results,
+    COALESCE(i.risk, 'Unknown') AS risk,
+    UPPER(TRIM(i.dba_name)) AS dba_name,
+    COALESCE(UPPER(TRIM(i.facility_type)), 'Unknown') AS facility_type,
+    UPPER(TRIM(i.address)) AS address,
+    COALESCE(i.zip, 'Unknown') AS zip
+FROM violations AS v
+JOIN inspections AS i
+    ON v.inspection_id = i.inspection_id;
+```
 
 ## Key Metrics
 * Violation Count
@@ -73,7 +100,7 @@ This is expected, but the vast majority of violations, inspections and so on occ
 ## Violations are Mostly the Same across ZIP Codes
 Similarity was measured as the percentage overlap between a ZIP code's top 10 violations and the overall top 10 violations. As a note, only ZIP codes with at least 50 inspections were included in the comparison. On average ZIP codes share 80% of the same violations as the top 10 overall violations, which leads me to believe that the regional differences are fairly minimal. This may be because each ZIP Code is converging towards the same list as restaurants and grocery stores (both of which have the same top 10 violations as the overall) because most inspections would be of those two facility types.
 
-There are differences but facility type is a stronger predictor or violation patterns than the business's ZIP code.
+There are differences but facility type is a stronger predictor of violation patterns than the business's ZIP code.
 
 ## Violations do Vary by Facility Type
 I compared the top 10 violations overall with the top 10 violations for each facility type and calculated the percentage of overlap. With this metric, restaurants, bakeries and grocery stores are typically in-line with the top 10 violations while facilities like healthcare, schools, and gas stations sit around 67% similarity. The most interesting aspect is that Mobile Food businesses share the fewest violations (25%) with the top 10.
@@ -85,7 +112,7 @@ For Mobile Food, in addition to violation 18 (no pest control log), they should 
 ![image](https://github.com/kacpersienkiewicz/Chicago-Food-Inspections/blob/main/images/violations_by_facility_type.png?raw=true)
 
 ## Highest-Risk Violations
-Several high-frequency violations are also strongly associated with a failed inspection (25-40%) making them important to focus on:
+Several high-frequency violations are also strongly associated with a failed inspection (25-40%), making them important to focus on:
 
 * Violation 55  - facility is not clean
 * Violation 34  - poorly kept flooring
@@ -95,7 +122,7 @@ Several high-frequency violations are also strongly associated with a failed ins
 * Violation 33  - improper cooling methods
 * Violation 47  - food surfaces improperly maintained 
 
-There are a few outliers that have a higher association with failure: 10 (inadequate hand-washing stations), 16 (food surfaces improperly cleaned), and 18 (not providing a pest control log). Approximately 95% of inspections with a violation 18 recorded resulted in a failed inspection, while the other two appear in failed inspections around 50-60% of the time.
+There are a few outliers that have a higher association with failure: 10 (inadequate hand-washing stations), 16 (food surfaces improperly cleaned), and 18 (not providing a pest control log). Approximately 95% of the 17003 inspections with a violation 18 recorded resulted in a failed inspection, while the other two appear in failed inspections around 50-60% of the time.
 
 ![image](https://github.com/kacpersienkiewicz/Chicago-Food-Inspections/blob/main/images/top_violations.png?raw=true)
 
@@ -115,7 +142,7 @@ What this means in practice:
 * Many of the smaller facility categories have substantially fewer inspections which may make their top 10 violations non-representative.
 
 ## Dashboard
-The Dashboard can be found [here](https://public.tableau.com/app/profile/kacper.sienkiewicz/viz/ChicagoFoodInspection_17814899770390/Overview).
+The Dashboard can be found [here](https://public.tableau.com/app/profile/kacper.sienkiewicz/viz/ChicagoFoodInspection_17814899770390/Overview). Its purpose is to allow users to explore violation patterns by facility type and ZIP code, and identify which violations are most associated with failed inspections.
 
 The first pane is an overview of inspections, broken down by month and year as well as breaking down violations by code, colored by failure rate.
 
@@ -123,8 +150,3 @@ The second pane focuses on facility types, showcasing the violations for each ty
 
 The final pane showcases a breakdown by ZIP codes and showcases violation count and inspections per year as filtered by ZIP code.
 
-## Key Takeaways
-* Violation patterns are largely consistent across Chicago ZIP codes.
-* Facility type is a stronger predictor for violation patterns than geographic location.
-* Mobile food facilities have very different violation profiles than standard restaurants.
-* Businesses can focus on a small number of violations to improve inspection outcomes: maintaining proper handwashing stations, clean food-contact surfaces, keep pest control logs, maintain overall cleanliness, and follow proper food handling, cooling and thawing procedures.
