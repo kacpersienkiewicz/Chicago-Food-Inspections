@@ -37,23 +37,21 @@ The analysis was performed using:
 ## Database Schema
 
 Inspections
-------------
-inspection_id (PK)
-dba_name
-facility_type
-address
-zip
-inspection_date
-inspection_type
-results
-risk
+* inspection_id (PK)
+* dba_name
+* facility_type
+* address
+* zip
+* inspection_date
+* inspection_type
+* results
+* risk
 
 Violations
-------------
-violation_id (PK)
-inspection_id (FK)
-violation_code
-violation_description
+* violation_id (PK)
+* inspection_id (FK)
+* violation_code
+* violation_description
 
 The original dataset contained a license ID that appeared to represent facilities. However, because the identifier was not consistently unique and included placeholder values (such as 0), a separate facilities table couldn't be made without introducing data integrity issues. 
 
